@@ -1,5 +1,4 @@
 import Ember from 'ember'
-import b2a   from 'b2a'
 
 const {
   Service,
@@ -9,7 +8,6 @@ const {
 export default Service.extend({
   fastboot:  service(),
   separator: '---',
-  b2a: b2a,
 
   pushResponse(requestToken, response) {
     this.get('fastboot.shoebox').put(
@@ -34,7 +32,27 @@ export default Service.extend({
   tokenizeAjaxRequest(url, type, options = {}) {
     let data = options.data
     let separator = this.get('separator')
-    return b2a.btoa([
+
+    const encode = str => {
+      if (typeof btoa === 'function') {
+        return btoa(str);
+      } else if (typeof FastBoot === 'object') {
+        try {
+          const buffer = FastBoot.require('buffer');
+          return buffer.Buffer.from(str).toString('base64')
+        } catch (err) {
+          throw new Error(
+            'buffer must be available for encoding base64 strings in FastBoot. Make sure to add buffer to your fastbootDependencies.'
+          );
+        }
+      } else {
+        throw new Error(
+          'Neither btoa nor the FastBoot global are avaialble. Unable to encode base64 strings.'
+        );
+      }
+    };
+
+    return encode([
       url,
       type,
       JSON.stringify(data)
